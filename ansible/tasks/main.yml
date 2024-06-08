@@ -1,0 +1,67 @@
+---
+- name: "Install openjdk jre headless"
+  ansible.builtin.apt:
+    name: openjdk-21-jre-headless
+    state: present
+
+- name: "Allow all access to port {{ server_port }}"
+  community.general.ufw:
+    rule: allow
+    port: "{{ server_port }}"
+
+- name: "Create minecraft group"
+  ansible.builtin.group:
+    name: "{{ minecraft_group }}"
+    state: present
+
+- name: "Create minecraft user"
+  ansible.builtin.user:
+    name: "{{ minecraft_user }}"
+    group: "{{ minecraft_group }}"
+
+- name: "Create {{ minecraft_directory }} directory"
+  ansible.builtin.file:
+    path: "{{ minecraft_directory }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ minecraft_user }}"
+    group: "{{ minecraft_group }}"
+
+- name: "Download minecraft server.jar"
+  ansible.builtin.get_url:
+    url: "{{ minecraft_server_download }}"
+    dest: "{{ minecraft_directory }}/server.jar"
+    mode: '0755'
+    owner: "{{ minecraft_user }}"
+    group: "{{ minecraft_group }}"
+
+- name: "Write config files to {{ minecraft_directory }}"
+  ansible.builtin.template:
+    src: "../templates/{{ item }}.j2"
+    dest: "{{ minecraft_directory }}/{{ item }}"
+    owner: "{{ minecraft_user }}"
+    group: "{{ minecraft_group }}"
+    mode: '0644'
+  loop:
+   - eula.txt
+   - server.properties
+  notify: Restart Minecraft
+
+- name: "Create minecraft systemd service file"
+  ansible.builtin.template:
+    src: "../templates/minecraft.service.j2"
+    dest: "/etc/systemd/system/minecraft.service"
+
+- name: "Reload systemd daemons"
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: "Create start and enable minecraft service"
+  ansible.builtin.systemd_service:
+    name: minecraft
+    state: started
+    enabled: true
+
+- name: "Display Minecraft connection info"
+  debug:
+    msg: "Minecraft Server: {{ ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0]) }}:{{ server_port }}"

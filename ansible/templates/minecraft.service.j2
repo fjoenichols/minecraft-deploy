@@ -1,0 +1,13 @@
+[Unit]
+Description=Minecraft server
+Wants=network.target
+
+[Service]
+User=minecraft
+Group=minecraft
+Restart=on-failure
+WorkingDirectory={{ minecraft_directory }}
+ExecStart=/usr/bin/java -Xms{{ minecraft_xms }} -Xmx{{ minecraft_xmx }} -jar server.jar --nogui
+
+[Install]
+WantedBy=multi-user.target
