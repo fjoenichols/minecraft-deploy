@@ -34,6 +34,7 @@
     mode: '0755'
     owner: "{{ minecraft_user }}"
     group: "{{ minecraft_group }}"
+  notify: Restart Minecraft
 
 - name: "Write config files to {{ minecraft_directory }}"
   ansible.builtin.template:
